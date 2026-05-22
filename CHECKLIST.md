@@ -38,7 +38,7 @@
 
 ## Tests (`tests/test_main.py`)
 
-- [ ] TODO 1: Function test for `predict_churn`
+- [x] TODO 1: Function test for `predict_churn`
 - [ ] TODO 3: Endpoint test for `POST /predict`
 - [ ] TODO 4: Endpoint test for `GET /health`
 - [ ] TODO 5: Endpoint test for `GET /`

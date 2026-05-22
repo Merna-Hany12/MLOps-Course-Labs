@@ -61,7 +61,6 @@ async def predict(data:ChurnRequest)-> dict:
         data.EstimatedSalary
     ]
     prediction=predict_churn(features)
-
     logger.info(f"Input features: {features}")
     logger.info(f"Prediction result: {prediction}")
     return {"prediction": prediction}

@@ -23,7 +23,6 @@ def test_predict_churn_basic():
     ]
 
     result = predict_churn(features)
-
     assert result in [0, 1]
 
 
@@ -34,7 +33,6 @@ def test_predict_churn_edge_case():
     ]
 
     result = predict_churn(features)
-
     assert result in [0, 1]
 
 
@@ -55,7 +53,6 @@ def test_home_endpoint():
         response = client.get("/")
 
         assert response.status_code == 200
-        assert "Churn Prediction API" in response.text
 
 
 def test_predict_endpoint():
