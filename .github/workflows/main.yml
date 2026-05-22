@@ -5,7 +5,7 @@ on:
     branches: ["main"]
 
 env:
-  IMAGE_NAME: churn-prediction-Merna-Hany
+  IMAGE_NAME: churn-prediction-19
   ECR_URL: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
 
 jobs:
@@ -53,15 +53,14 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build -t $IMAGE_NAME:latest .
-
+              docker build -t churn-prediction-19:latest .
       - name: Tag Docker image
         run: |
-          docker tag $IMAGE_NAME:latest $ECR_URL/$IMAGE_NAME:latest
+              docker tag churn-prediction-19:latest $ECR_URL/churn-prediction-19:latest
 
       - name: Push to ECR
         run: |
-          docker push $ECR_URL/$IMAGE_NAME:latest
+          docker push $ECR_URL/churn-prediction-19:latest
 
 
   deploy:
@@ -82,7 +81,7 @@ jobs:
             | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
 
             echo "Pulling latest image..."
-            docker pull $ECR_URL/$IMAGE_NAME:latest
+            docker pull $ECR_URL/churn-prediction-19:latest
 
             echo "Stopping old container..."
             docker stop churn-api || true
@@ -92,4 +91,4 @@ jobs:
             docker run -d \
               -p 443:8000 \
               --name churn-api \
-              $ECR_URL/$IMAGE_NAME:latest
+              $ECR_URL/churn-prediction-19:latest
