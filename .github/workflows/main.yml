@@ -48,19 +48,29 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
+      - name: Create ECR repository if it does not exist
+        run: |
+          aws ecr describe-repositories \
+          --repository-names $IMAGE_NAME \
+          --region ${{ vars.AWS_REGION }} \
+          || aws ecr create-repository \
+          --repository-name $IMAGE_NAME \
+          --region ${{ vars.AWS_REGION }}
+
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build Docker image
         run: |
-              docker build -t churn-prediction-19:latest .
+          docker build -t $IMAGE_NAME:latest .
+
       - name: Tag Docker image
         run: |
-              docker tag churn-prediction-19:latest $ECR_URL/churn-prediction-19:latest
+          docker tag $IMAGE_NAME:latest $ECR_URL/$IMAGE_NAME:latest
 
       - name: Push to ECR
         run: |
-          docker push $ECR_URL/churn-prediction-19:latest
+          docker push $ECR_URL/$IMAGE_NAME:latest
 
 
   deploy:
