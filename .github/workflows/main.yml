@@ -1,0 +1,95 @@
+name: CI/CD Pipeline (Test → ECR → EC2 Deploy)
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  IMAGE_NAME: churn-prediction-Merna-Hany
+  ECR_URL: ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: |
+          curl -Ls https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest tests -v
+
+
+  build-and-push:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        run: |
+          docker build -t $IMAGE_NAME:latest .
+
+      - name: Tag Docker image
+        run: |
+          docker tag $IMAGE_NAME:latest $ECR_URL/$IMAGE_NAME:latest
+
+      - name: Push to ECR
+        run: |
+          docker push $ECR_URL/$IMAGE_NAME:latest
+
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to EC2 via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ vars.EC2_USERNAME }}
+          key: ${{ secrets.KEY }}
+          script: |
+            echo "Logging into ECR..."
+
+            aws ecr get-login-password --region ${{ vars.AWS_REGION }} \
+            | docker login --username AWS --password-stdin ${{ vars.AWS_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION }}.amazonaws.com
+
+            echo "Pulling latest image..."
+            docker pull $ECR_URL/$IMAGE_NAME:latest
+
+            echo "Stopping old container..."
+            docker stop churn-api || true
+            docker rm churn-api || true
+
+            echo "Starting new container on port 443..."
+            docker run -d \
+              -p 443:8000 \
+              --name churn-api \
+              $ECR_URL/$IMAGE_NAME:latest
