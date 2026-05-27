@@ -48,6 +48,11 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ vars.AWS_REGION }}
 
+
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
       - name: Create ECR repository if it does not exist
         run: |
           aws ecr describe-repositories \
@@ -56,10 +61,7 @@ jobs:
           || aws ecr create-repository \
           --repository-name $IMAGE_NAME \
           --region ${{ vars.AWS_REGION }}
-
-      - name: Login to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v2
-
+          
       - name: Build Docker image
         run: |
           docker build -t $IMAGE_NAME:latest .
